@@ -16,12 +16,17 @@ public class PlayerMovement : MonoBehaviour
     public float crouchHeight = 1f;
     public float crouchSpeed = 3f;
     public float cameraCollisionSmoothness = 10f;
+    public float dodgeDistance = 5f;
+    public float dodgeDuration = 0.2f;
+    public float dodgeCooldown = 1f;
     
     private Vector3 moveDirection = Vector3.zero;
     private float rotationX = 0;
     private CharacterController characterController;
     private bool canMove = true;
     private Vector3 defaultCameraLocalPosition;
+    private bool isDodging = false;
+    private float lastDodgeTime = -Mathf.Infinity;
 
     void Start()
     {
@@ -33,6 +38,12 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
+        if (!isDodging && Input.GetKeyDown(KeyCode.LeftControl) && Time.time > lastDodgeTime + dodgeCooldown)
+        {
+            StartCoroutine(DodgeRoll());
+            return;
+        }
+
         Vector3 forward = transform.TransformDirection(Vector3.forward);
         Vector3 right = transform.TransformDirection(Vector3.right);
 
@@ -81,6 +92,49 @@ public class PlayerMovement : MonoBehaviour
 
         HandleCameraCollision();
     }
+
+    IEnumerator DodgeRoll()
+{
+    isDodging = true;
+    canMove = false;
+    lastDodgeTime = Time.time;
+
+    // Calculate dodge direction based on WASD input
+    Vector3 dodgeDirection = Vector3.zero;
+
+    if (Input.GetKey(KeyCode.W)) // Forward
+        dodgeDirection += transform.forward;
+
+    if (Input.GetKey(KeyCode.S)) // Backward
+        dodgeDirection -= transform.forward;
+
+    if (Input.GetKey(KeyCode.A)) // Left
+        dodgeDirection -= transform.right;
+
+    if (Input.GetKey(KeyCode.D)) // Right
+        dodgeDirection += transform.right;
+
+    // If no direction was pressed, default to forward
+    if (dodgeDirection == Vector3.zero)
+        dodgeDirection = transform.forward;
+
+    // Normalize the direction to prevent faster dodging in diagonal directions
+    dodgeDirection.Normalize();
+
+    float elapsedTime = 0;
+
+    while (elapsedTime < dodgeDuration)
+    {
+        // Move the character in the dodge direction
+        characterController.Move(dodgeDirection * (dodgeDistance / dodgeDuration) * Time.deltaTime);
+        elapsedTime += Time.deltaTime;
+        yield return null;
+    }
+
+    canMove = true;
+    isDodging = false;
+}
+
 
     void HandleCameraCollision()
     {
