@@ -15,18 +15,20 @@ public class PlayerMovement : MonoBehaviour
     public float defaultHeight = 2f;
     public float crouchHeight = 1f;
     public float crouchSpeed = 3f;
-
+    public float cameraCollisionSmoothness = 10f;
+    
     private Vector3 moveDirection = Vector3.zero;
     private float rotationX = 0;
     private CharacterController characterController;
-
     private bool canMove = true;
+    private Vector3 defaultCameraLocalPosition;
 
     void Start()
     {
         characterController = GetComponent<CharacterController>();
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        defaultCameraLocalPosition = playerCamera.transform.localPosition;
     }
 
     void Update()
@@ -59,7 +61,6 @@ public class PlayerMovement : MonoBehaviour
             characterController.height = crouchHeight;
             walkSpeed = crouchSpeed;
             runSpeed = crouchSpeed;
-
         }
         else
         {
@@ -76,6 +77,22 @@ public class PlayerMovement : MonoBehaviour
             rotationX = Mathf.Clamp(rotationX, -lookXLimit, lookXLimit);
             playerCamera.transform.localRotation = Quaternion.Euler(rotationX, 0, 0);
             transform.rotation *= Quaternion.Euler(0, Input.GetAxis("Mouse X") * lookSpeed, 0);
+        }
+
+        HandleCameraCollision();
+    }
+
+    void HandleCameraCollision()
+    {
+        Vector3 desiredCameraWorldPosition = transform.TransformPoint(defaultCameraLocalPosition);
+        RaycastHit hit;
+        if (Physics.Linecast(transform.position, desiredCameraWorldPosition, out hit))
+        {
+            playerCamera.transform.position = Vector3.Lerp(playerCamera.transform.position, hit.point + hit.normal * 0.1f, Time.deltaTime * cameraCollisionSmoothness);
+        }
+        else
+        {
+            playerCamera.transform.localPosition = Vector3.Lerp(playerCamera.transform.localPosition, defaultCameraLocalPosition, Time.deltaTime * cameraCollisionSmoothness);
         }
     }
 }
