@@ -67,7 +67,7 @@ public class PlayerMovement : MonoBehaviour
             // Only add forward push when not moving backward
             if (Mathf.Abs(horizontalInput) > 0.1f && verticalInput >= 0)
             {
-                verticalInput = Mathf.Max(verticalInput, Mathf.Abs(horizontalInput) * 0.2f);
+                verticalInput = Mathf.Max(verticalInput, Mathf.Abs(horizontalInput) * 0.05f);
             }
             
             moveDirection = (forward * verticalInput * speed) + (right * horizontalInput * speed);

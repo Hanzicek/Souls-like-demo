@@ -172,7 +172,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   playerCamera: {fileID: 330585545}
   bossTarget: {fileID: 1357117649}
-  lockOnSmoothSpeed: 3
+  lockOnSmoothSpeed: 6
   lockOnCameraDistance: 3
   lockOnHeightOffset: 1.5
   cameraCollisionSmoothness: 10
@@ -181,7 +181,7 @@ MonoBehaviour:
   jumpPower: 7
   gravity: 10
   dodgeDistance: 5
-  dodgeDuration: 0.3
+  dodgeDuration: 0.4
   dodgeCooldown: 1
 --- !u!143 &186449945
 CharacterController:
