@@ -1,44 +1,97 @@
 using UnityEngine;
 using UnityEngine.UI;
+using System.Collections;
 
 public class BossHealth : MonoBehaviour
 {
-    public int maxHealth = 500; // Set boss max HP
-    private int currentHealth;
+    [Header("Health Settings")]
+    [Tooltip("Starting health points")] 
+    public int maxHealth = 1000;
+    [Tooltip("Current health points")] 
+    public int currentHealth;
 
-    public Slider healthBar; // Drag the UI Slider here in the Inspector
+    [Header("UI Settings")]
+    [Tooltip("Reference to the screen-space health bar")] 
+    public Slider healthSlider;
+    [Tooltip("Optional health text display")] 
+    public Text healthText;
+    [Tooltip("How fast health bar updates (smoothness)")] 
+    public float healthLerpSpeed = 5f;
+
+    [Header("Effects")]
+    public AudioClip hitSound;
+    public ParticleSystem hitParticles;
+
+    private float _targetHealth;
+    private bool _isDead;
 
     void Start()
     {
         currentHealth = maxHealth;
-        UpdateHealthBar();
+        _targetHealth = maxHealth;
+        
+        if (healthSlider != null)
+        {
+            healthSlider.maxValue = maxHealth;
+            healthSlider.value = maxHealth;
+        }
+        
+        UpdateHealthText();
+    }
+
+    void Update()
+    {
+        // Smooth health bar animation
+        if (healthSlider != null && Mathf.Abs(healthSlider.value - _targetHealth) > 0.1f)
+        {
+            healthSlider.value = Mathf.Lerp(healthSlider.value, _targetHealth, Time.deltaTime * healthLerpSpeed);
+        }
     }
 
     public void TakeDamage(int damage)
     {
-        currentHealth -= damage;
-        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        if (_isDead) return;
 
-        UpdateHealthBar();
+        currentHealth = Mathf.Max(0, currentHealth - damage);
+        _targetHealth = currentHealth;
+        
+        // Effects
+        if (hitParticles != null)
+            Instantiate(hitParticles, transform.position, Quaternion.identity);
+        
+        if (hitSound != null)
+            AudioSource.PlayClipAtPoint(hitSound, transform.position);
+
+        // UI Update
+        UpdateHealthText();
 
         if (currentHealth <= 0)
-        {
             Die();
-        }
     }
 
-    void UpdateHealthBar()
+    void UpdateHealthText()
     {
-        if (healthBar != null)
-        {
-            healthBar.value = (float)currentHealth / maxHealth; // Normalize health (0-1)
-        }
+        if (healthText != null)
+            healthText.text = $"{currentHealth}/{maxHealth}";
     }
 
     void Die()
     {
-        Debug.Log("Boss Defeated!");
-        // Add death animation or boss destruction here
-        Destroy(gameObject, 2f); // Remove boss after 2 seconds
+        _isDead = true;
+        Debug.Log("BOSS DEFEATED!");
+        
+        // Disable health bar
+        if (healthSlider != null)
+            healthSlider.gameObject.SetActive(false);
+        
+        // Add death effects/animations here
+        Destroy(gameObject, 3f);
+    }
+
+    // For testing in editor
+    [ContextMenu("Test Damage")]
+    public void TestTakeDamage()
+    {
+        TakeDamage(250);
     }
 }

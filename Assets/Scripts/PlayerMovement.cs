@@ -26,6 +26,9 @@ public class PlayerMovement : MonoBehaviour
     private float lastDodgeTime = -Mathf.Infinity;
     private bool isLockedOn = false;
     private Vector3 defaultCameraLocalPosition;
+    private bool isMovementFrozen = false;
+
+    public bool isAttacking;
 
     void Start()
     {
@@ -35,8 +38,46 @@ public class PlayerMovement : MonoBehaviour
         defaultCameraLocalPosition = playerCamera.transform.localPosition;
     }
 
+    IEnumerator AttackRoutine()
+    {
+        isAttacking = true;
+        isMovementFrozen = true; // Freeze only movement
+        Debug.Log("Attacking...");
+        
+        yield return new WaitForSeconds(1.0f); // Movement frozen for 1 second
+        
+        isMovementFrozen = false; // Unfreeze movement
+        yield return new WaitForSeconds(1.0f); // Additional attack time (total 2 seconds)
+        
+        isAttacking = false;
+        Debug.Log("Attack finished!");
+    }
+
     void Update()
     {
+        if (Input.GetMouseButtonDown(0) && !isAttacking)  // Prevent multiple attacks
+        {
+            StartCoroutine(AttackRoutine());
+        }
+
+        // Camera control always works, even when movement is frozen
+        if (isLockedOn && bossTarget != null)
+        {
+            LockOnBehavior();
+        }
+        else
+        {
+            NormalCameraControl();
+        }
+
+        HandleCameraCollision();
+
+        // Skip movement if frozen or attacking
+        if (isMovementFrozen || isAttacking)
+        {
+            return;
+        }
+
         if (Input.GetKeyDown(KeyCode.Q))
         {
             isLockedOn = !isLockedOn;
@@ -64,7 +105,6 @@ public class PlayerMovement : MonoBehaviour
             float verticalInput = Input.GetAxis("Vertical");
             float horizontalInput = Input.GetAxis("Horizontal");
             
-            // Only add forward push when not moving backward
             if (Mathf.Abs(horizontalInput) > 0.1f && verticalInput >= 0)
             {
                 verticalInput = Mathf.Max(verticalInput, Mathf.Abs(horizontalInput) * 0.05f);
@@ -82,7 +122,7 @@ public class PlayerMovement : MonoBehaviour
             float curSpeedY = canMove ? (isRunning ? runSpeed : walkSpeed) * Input.GetAxis("Horizontal") : 0;
             moveDirection = (forward * curSpeedX) + (right * curSpeedY);
         }
-
+        
         if (Input.GetButton("Jump") && canMove && characterController.isGrounded)
         {
             moveDirection.y = jumpPower;
@@ -93,17 +133,6 @@ public class PlayerMovement : MonoBehaviour
         }
 
         characterController.Move(moveDirection * Time.deltaTime);
-
-        if (isLockedOn && bossTarget != null)
-        {
-            LockOnBehavior();
-        }
-        else
-        {
-            NormalCameraControl();
-        }
-
-        HandleCameraCollision();
     }
 
     void LockOnBehavior()
